@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  reddit-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reddit-analyzer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped

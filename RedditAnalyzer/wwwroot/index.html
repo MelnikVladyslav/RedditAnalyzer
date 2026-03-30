@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reddit Analyzer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    header .logo {
+      font-size: 2rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ff4500;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #333;
+      border-bottom: 2px solid #ff4500;
+      padding-bottom: 8px;
+      display: inline-block;
+    }
+
+    .subreddit-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .subreddit-item input {
+      flex: 1;
+      min-width: 140px;
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    .subreddit-item input:focus {
+      outline: none;
+      border-color: #ff4500;
+    }
+
+    .subreddit-item button.remove-btn {
+      background: #fee;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: #cc0000;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+
+    .subreddit-item button.remove-btn:hover { background: #fcc; }
+
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: #f0f2f5;
+      color: #333;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      background: #ff4500;
+      color: white;
+      padding: 11px 28px;
+      font-size: 1rem;
+    }
+
+    .btn-download {
+      background: #2ecc71;
+      color: white;
+      font-size: 0.85rem;
+      padding: 7px 14px;
+    }
+
+    .limit-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .limit-row label {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .limit-row input[type=number] {
+      width: 80px;
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .limit-row input[type=number]:focus {
+      outline: none;
+      border-color: #ff4500;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    #spinner {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #eee;
+      border-top-color: #ff4500;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error-box {
+      display: none;
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      color: #cc0000;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .subreddit-block {
+      margin-bottom: 20px;
+    }
+
+    .subreddit-block h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ff4500;
+      margin-bottom: 10px;
+    }
+
+    .post-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8f9fa;
+      margin-bottom: 6px;
+      font-size: 0.88rem;
+    }
+
+    .post-title { flex: 1; line-height: 1.4; }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .badge-image { background: #d4edda; color: #155724; }
+    .badge-text  { background: #e2e3e5; color: #383d41; }
+
+    .empty-msg {
+      color: #999;
+      font-size: 0.88rem;
+      font-style: italic;
+      padding: 8px 0;
+    }
+
+    #results-card { display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">🔍</div>
+    <div>
+      <h1>Reddit Analyzer</h1>
+      <p>Filter posts by keywords across multiple subreddits</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>Subreddits &amp; Keywords</h2>
+    <div id="subreddit-list"></div>
+    <button class="btn btn-secondary" onclick="addRow()">+ Add subreddit</button>
+
+    <div style="margin-top:20px;">
+      <div class="limit-row">
+        <label for="limit">Posts to fetch per subreddit:</label>
+        <input type="number" id="limit" value="25" min="1" max="100" />
+      </div>
+    </div>
+
+    <div style="margin-top:20px;" class="actions">
+      <button class="btn btn-primary" onclick="analyze()">▶ Analyze</button>
+      <div id="spinner"></div>
+    </div>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div class="card" id="results-card">
+    <div class="results-header">
+      <h2>Results</h2>
+      <button class="btn btn-download" onclick="download()">⬇ Download JSON</button>
+    </div>
+    <div id="results-body"></div>
+  </div>
+
+</div>
+
+<script>
+  let lastResult = null;
+
+  function addRow(subreddit = '', keywords = '') {
+    const list = document.getElementById('subreddit-list');
+    const div = document.createElement('div');
+    div.className = 'subreddit-item';
+    div.innerHTML = `
+      <input type="text" placeholder="r/subreddit" value="${subreddit}" class="sr-name" />
+      <input type="text" placeholder="keywords, comma separated" value="${keywords}" class="sr-keywords" style="flex:2"/>
+      <button class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+    `;
+    list.appendChild(div);
+  }
+
+  function buildRequest() {
+    const rows = document.querySelectorAll('.subreddit-item');
+    const items = [];
+    for (const row of rows) {
+      const sr = row.querySelector('.sr-name').value.trim();
+      const kw = row.querySelector('.sr-keywords').value.trim();
+      if (!sr) continue;
+      items.push({
+        subreddit: sr,
+        keywords: kw ? kw.split(',').map(k => k.trim()).filter(Boolean) : []
+      });
+    }
+    return { items, limit: parseInt(document.getElementById('limit').value) || 25 };
+  }
+
+  function setLoading(on) {
+    document.getElementById('spinner').style.display = on ? 'block' : 'none';
+    document.querySelector('.btn-primary').disabled = on;
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-box').style.display = 'none';
+  }
+
+  async function analyze() {
+    hideError();
+    const req = buildRequest();
+    if (!req.items.length) { showError('Add at least one subreddit.'); return; }
+
+    setLoading(true);
+    document.getElementById('results-card').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/reddit/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) { showError(data.error || 'Server error.'); return; }
+
+      lastResult = data;
+      renderResults(data);
+    } catch (e) {
+      showError('Network error: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResults(data) {
+    const body = document.getElementById('results-body');
+    body.innerHTML = '';
+
+    for (const [subreddit, posts] of Object.entries(data)) {
+      const block = document.createElement('div');
+      block.className = 'subreddit-block';
+
+      const count = posts.length;
+      block.innerHTML = `<h3>${subreddit} <span style="font-size:0.8rem;color:#888;font-weight:400">(${count} post${count !== 1 ? 's' : ''})</span></h3>`;
+
+      if (!posts.length) {
+        block.innerHTML += `<div class="empty-msg">No matching posts found.</div>`;
+      } else {
+        for (const post of posts) {
+          const item = document.createElement('div');
+          item.className = 'post-item';
+          const badgeClass = post.hasImage ? 'badge-image' : 'badge-text';
+          const badgeLabel = post.hasImage ? '🖼 image' : '📝 text';
+          item.innerHTML = `
+            <span class="post-title">${escapeHtml(post.title)}</span>
+            <span class="badge ${badgeClass}">${badgeLabel}</span>
+          `;
+          block.appendChild(item);
+        }
+      }
+
+      body.appendChild(block);
+    }
+
+    document.getElementById('results-card').style.display = 'block';
+  }
+
+  function download() {
+    if (!lastResult) return;
+    const blob = new Blob([JSON.stringify(lastResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reddit_analysis_${new Date().toISOString().slice(0,19).replace(/[T:]/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Init with one row
+  addRow('r/nature', 'forest, river');
+  addRow('r/aww', 'cat, dog');
+</script>
+</body>
+</html>
